@@ -7,7 +7,7 @@ cases like the following:
 ## Register simple values:
 
 ```ts
-import { assemble, get } from "https://deno.land/x/cargo_assemble";
+import { assemble, get } from "jsr:@cargo/assemble";
 
 // Register simple value and make it available in Cargo Assemble
 assemble({

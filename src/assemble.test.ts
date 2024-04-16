@@ -1,9 +1,7 @@
 import { assemble, get } from "./mod.ts";
-import {
-  assertEquals,
-  assertNotStrictEquals,
-  assertStrictEquals,
-} from "std/testing/asserts.ts";
+import { assertEquals } from "@std/assert/assert-equals";
+import { assertNotStrictEquals } from "@std/assert/assert-not-strict-equals";
+import { assertStrictEquals } from "@std/assert/assert-strict-equals";
 
 Deno.test(`should return a expected value`, () => {
   assemble({

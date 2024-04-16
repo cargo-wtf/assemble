@@ -109,3 +109,11 @@ export function get<T, A extends Injectable = string>(
 
   throw new Error(errMsg);
 }
+
+export function Assemble(toAssemble: ToAssemble<unknown>[]): void {
+  if (Array.isArray(toAssemble)) {
+    for (const item of toAssemble) {
+      assemble(item);
+    }
+  }
+}
