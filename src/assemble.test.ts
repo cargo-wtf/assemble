@@ -138,8 +138,6 @@ Deno.test("should return function result based on deps", () => {
 Deno.test("should return decorated class with deps", () => {
   @assemble()
   class B {
-    constructor(h: string) {}
-
     prefix(v: string): string {
       return `B: ${v}`;
     }
@@ -162,8 +160,6 @@ Deno.test("should return decorated class with deps", () => {
     token: "PREFIX",
     value: "prefixed value:",
   });
-  DI.assemble(A);
-  DI.assemble(B);
 
   assertEquals(DI.get(B).prefix("works"), "B: works");
   assertEquals(DI.get(A).prefix("works"), "B: prefixed value: works");

@@ -49,7 +49,7 @@ export class Factory {
   get<T, A extends Injectable = string>(
     token: A,
   ): ReturnValue<A, T> {
-    const injectable = this.#registry.find((item) => {
+    let injectable = this.#registry.find((item) => {
       return item.type === token;
     });
 
@@ -57,7 +57,22 @@ export class Factory {
       `Provided token: "${token.toString()}" is not registered for dependency injection`;
 
     if (!injectable) {
-      throw new Error(errMsg);
+      if (
+        typeof token === "function" &&
+        Symbol.metadata in token &&
+        token[Symbol.metadata] &&
+        Array.isArray(token[Symbol.metadata]![ASSEMBLE_METADATA_KEY])
+      ) {
+        const dependencies =
+          <Injectable[]> token[Symbol.metadata]![ASSEMBLE_METADATA_KEY];
+        this.assemble({ class: <Newable<unknown>> token, dependencies });
+      }
+      injectable = this.#registry.find((item) => {
+        return item.type === token;
+      });
+      if (!injectable) {
+        throw new Error(errMsg);
+      }
     }
 
     if ("class" in injectable) {
@@ -96,21 +111,7 @@ export class Factory {
     throw new Error(errMsg);
   }
 
-  assemble<T>(toAssemble: ToAssemble<T> | Newable<T>) {
-    if (typeof toAssemble === "function") {
-      const deps = Symbol.metadata in toAssemble &&
-          Array.isArray(toAssemble[Symbol.metadata]![ASSEMBLE_METADATA_KEY])
-        ? toAssemble[Symbol.metadata]![ASSEMBLE_METADATA_KEY]
-        : undefined;
-
-      this.#registry.push({
-        type: toAssemble,
-        class: toAssemble,
-        dependencies: <Injectable[] | undefined> deps,
-      });
-      return;
-    }
-
+  assemble<T>(toAssemble: ToAssemble<T>) {
     if ("class" in toAssemble) {
       this.#registry.push({
         type: toAssemble.class,
@@ -135,7 +136,7 @@ export class Factory {
   }
 }
 
-export const ASSEMBLE_METADATA_KEY = "cargo:assemble:deps";
+const ASSEMBLE_METADATA_KEY = "cargo:assemble:deps";
 
 export function assemble<T>(
   options?: {
@@ -146,8 +147,10 @@ export function assemble<T>(
     target: T,
     context: ClassDecoratorContext,
   ) {
-    if (context.kind && Array.isArray(options?.deps)) {
-      context.metadata[ASSEMBLE_METADATA_KEY] = [...options.deps];
+    if (context.kind) {
+      context.metadata[ASSEMBLE_METADATA_KEY] = [
+        ...(options?.deps ? options.deps : []),
+      ];
     }
     return target;
   };
