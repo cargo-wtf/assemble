@@ -1,6 +1,6 @@
 {
   "name": "@cargo/assemble",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "imports": {
     "@cargo/cargo": "jsr:@cargo/cargo@^0.0.8",
     "@std/assert": "jsr:@std/assert@^0.222.1"
