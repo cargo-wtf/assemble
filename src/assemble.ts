@@ -137,12 +137,18 @@ export class Factory {
 
 export const ASSEMBLE_METADATA_KEY = "cargo:assemble:deps";
 
-export function assemble<T>(options?: {
-  deps?: unknown[];
-}) {
-  return function (_: T, context: ClassDecoratorContext): void {
+export function assemble<T>(
+  options?: {
+    deps?: unknown[];
+  },
+): (target: T, context: ClassDecoratorContext) => T {
+  return function (
+    target: T,
+    context: ClassDecoratorContext,
+  ) {
     if (context.kind && Array.isArray(options?.deps)) {
       context.metadata[ASSEMBLE_METADATA_KEY] = [...options.deps];
     }
+    return target;
   };
 }
