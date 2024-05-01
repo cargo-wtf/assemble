@@ -7,30 +7,32 @@ cases like the following:
 ## Register simple values:
 
 ```ts
-import { assemble, get } from "jsr:@cargo/assemble";
+import { Factory } from "jsr:@cargo/assemble";
 
 // Register simple value and make it available in Cargo Assemble
-assemble({
+const DI = new Factory();
+DI.assemble({
   token: "hello",
   value: "world",
 });
 
 // Get value from Cargo Assemble via token
-get("hello");
+DI.get("hello");
 ```
 
 ## Register class including its dependencies:
 
 ```ts
-import { assemble } from "https://deno.land/x/cargo_assemble";
+import { Factory } from "jsr:@cargo/assemble";
 
+const DI = new Factory();
 // Create and register class without dependencies
 class GreetingService {
 	greet(value string) {
 		return value;
 	}
 }
-assemble({
+DI.assemble({
 	class: GreetingService
 })
 
@@ -50,30 +52,31 @@ class ServiceB {
  * Note the second dependency in the array. This is a reference to the value 
  * registered in the first example.
  */
-assemble({
+DI.assemble({
 	class: ServiceB,
 	dependencies: [GreetingService,'hello'],
 })
 
-get(ServiceB).say() // returns "world"
+DI.get(ServiceB).say() // returns "world"
 ```
 
 ## Register class including its dependencies:
 
 ```ts
-import { assemble } from "https://deno.land/x/cargo_assemble";
+import { Factory } from "jsr:@cargo/assemble";
+const DI = new Factory();
 
 function say(serviceB: ServiceB) {
   return serviceB.say();
 }
 
 // We handover the class from the previous example as a dependency
-assemble({
+DI.assemble({
   function: say,
   dependencies: [ServiceB],
 });
 
-get(say); // returns "world"
+DI.get(say); // returns "world"
 ```
 
 ## Limits

@@ -1,7 +1,3 @@
-const registry: ItemToAssemble[] = [];
-
-const items = new Map<Injectable, unknown>();
-
 type ItemToAssemble = ToAssemble<unknown> & {
   type: Injectable;
   value?: unknown;
@@ -39,81 +35,114 @@ export type ToAssemble<T> =
   | FunctionToAssemble<T>
   | ValueToAssemble<T>;
 
-export function assemble<T>(toAssemble: ToAssemble<T>) {
-  if ("class" in toAssemble) {
-    registry.push({
-      type: toAssemble.class,
-      ...toAssemble,
-    });
-  }
-  if ("token" in toAssemble) {
-    registry.push({
-      type: toAssemble.token,
-      ...toAssemble,
-    });
-  }
-  if ("function" in toAssemble) {
-    registry.push({
-      type: toAssemble.function,
-      ...toAssemble,
-    });
-  }
-}
-
 type ReturnValue<A extends Injectable, T> = A extends string
   ? ValueToAssemble<T>["value"]
   : (A extends (...args: any) => any ? ReturnType<A>
     : (A extends new (...args: any[]) => infer R ? R : never));
 
-export function get<T, A extends Injectable = string>(
-  token: A,
-): ReturnValue<A, T> {
-  const injectable = registry.find((item) => {
-    return item.type === token;
-  });
+export type Registery = ItemToAssemble[];
 
-  const errMsg =
-    `Provided token: "${token.toString()}" is not registered for dependency injection`;
+export class Factory {
+  #registry: ItemToAssemble[] = [];
+  #singletons = new Map<Injectable, unknown>();
 
-  if (!injectable) {
+  get<T, A extends Injectable = string>(
+    token: A,
+  ): ReturnValue<A, T> {
+    const injectable = this.#registry.find((item) => {
+      return item.type === token;
+    });
+
+    const errMsg =
+      `Provided token: "${token.toString()}" is not registered for dependency injection`;
+
+    if (!injectable) {
+      throw new Error(errMsg);
+    }
+
+    if ("class" in injectable) {
+      if (injectable.isSingleton !== false) {
+        const item = this.#singletons.get(injectable.type);
+        if (item) return <ReturnValue<A, T>> item;
+      }
+      const deps: unknown[] = injectable.dependencies?.map((toInject) =>
+        this.get(toInject)
+      ) ?? [];
+
+      const item = <ReturnValue<A, T>> new injectable.class(...deps);
+
+      if (injectable.isSingleton !== false) {
+        this.#singletons.set(
+          injectable.type,
+          item,
+        );
+      }
+
+      return item;
+    }
+
+    if ("function" in injectable) {
+      const deps: unknown[] = injectable.dependencies?.map((toInject) => {
+        return this.get(toInject);
+      }) ?? [];
+
+      return <ReturnValue<A, T>> injectable.function(...deps);
+    }
+
+    if ("token" in injectable) {
+      return <ReturnValue<A, T>> injectable.value;
+    }
+
     throw new Error(errMsg);
   }
 
-  if ("class" in injectable) {
-    if (injectable.isSingleton !== false) {
-      const item = items.get(injectable.type);
-      if (item) return <ReturnValue<A, T>> item;
+  assemble<T>(toAssemble: ToAssemble<T> | Newable<T>) {
+    if (typeof toAssemble === "function") {
+      const deps = Symbol.metadata in toAssemble &&
+          Array.isArray(toAssemble[Symbol.metadata]![ASSEMBLE_METADATA_KEY])
+        ? toAssemble[Symbol.metadata]![ASSEMBLE_METADATA_KEY]
+        : undefined;
+
+      this.#registry.push({
+        type: toAssemble,
+        class: toAssemble,
+        dependencies: <Injectable[] | undefined> deps,
+      });
+      return;
     }
-    const deps: unknown[] = injectable.dependencies?.map((toInject) =>
-      get(toInject)
-    ) ?? [];
 
-    const item = <ReturnValue<A, T>> new injectable.class(...deps);
-
-    if (injectable.isSingleton !== false) items.set(injectable.type, item);
-
-    return item;
+    if ("class" in toAssemble) {
+      this.#registry.push({
+        type: toAssemble.class,
+        ...toAssemble,
+      });
+      return;
+    }
+    if ("token" in toAssemble) {
+      this.#registry.push({
+        type: toAssemble.token,
+        ...toAssemble,
+      });
+      return;
+    }
+    if ("function" in toAssemble) {
+      this.#registry.push({
+        type: toAssemble.function,
+        ...toAssemble,
+      });
+      return;
+    }
   }
-
-  if ("function" in injectable) {
-    const deps: unknown[] = injectable.dependencies?.map((toInject) => {
-      return get(toInject);
-    }) ?? [];
-
-    return <ReturnValue<A, T>> injectable.function(...deps);
-  }
-
-  if ("token" in injectable) {
-    return <ReturnValue<A, T>> injectable.value;
-  }
-
-  throw new Error(errMsg);
 }
 
-export function Assemble(toAssemble: ToAssemble<unknown>[]): void {
-  if (Array.isArray(toAssemble)) {
-    for (const item of toAssemble) {
-      assemble(item);
+export const ASSEMBLE_METADATA_KEY = "cargo:assemble:deps";
+
+export function assemble<T>(options?: {
+  deps?: unknown[];
+}) {
+  return function (_: T, context: ClassDecoratorContext): void {
+    if (context.kind && Array.isArray(options?.deps)) {
+      context.metadata[ASSEMBLE_METADATA_KEY] = [...options.deps];
     }
-  }
+  };
 }
