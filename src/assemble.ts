@@ -1,10 +1,10 @@
 /**
- * @module
- *
  * With Cargo Assemble you get a simple and light dependency injection container
  * for your project. Its straight forward to use and is suitable for simple use
  * cases like the following:
- * ```ts
+ * @module
+ *
+ * ``ts
  * import { Factory } from "jsr:@cargo/assemble";
  *
  * const DI = new Factory();
@@ -84,8 +84,6 @@ type ReturnValue<A extends Injectable, T> = A extends string
   ? ValueToAssemble<T>["value"]
   : (A extends (...args: any) => any ? ReturnType<A>
     : (A extends new (...args: any[]) => infer R ? R : never));
-
-export type Registery = ItemToAssemble[];
 
 /**
  * Factory to manage the dependency injection tasks
