@@ -1,3 +1,27 @@
+/**
+ * @module
+ *
+ * With Cargo Assemble you get a simple and light dependency injection container
+ * for your project. Its straight forward to use and is suitable for simple use
+ * cases like the following:
+ * ```ts
+ * import { Factory } from "jsr:@cargo/assemble";
+ *
+ * const DI = new Factory();
+ *
+ * class GreetingService {
+ *    greet(value string) {
+ *      return value;
+ *    }
+ * }
+ * DI.assemble({
+ *   class: GreetingService
+ * });
+ *
+ * DI.get(GreetingService);
+ * ```
+ */
+
 type ItemToAssemble = ToAssemble<unknown> & {
   type: Injectable;
   value?: unknown;
@@ -14,22 +38,43 @@ type Injectable =
   | Newable<unknown>
   | Callable<unknown>;
 
-interface ClassToAssemble<T> {
+/**
+ *  Input for {@link Factory.assemble} to register a class
+ */
+export interface ClassToAssemble<T> {
+  /** The class to be constructed by Assemble */
   class: Newable<T>;
+  /**
+   * Whether of not the class should be handled as a singleton instance (e.q. only exists once).
+   * @default true
+   */
   isSingleton?: boolean;
+  /**
+   * The dependencies of the class as {@link Injectable[]} tokens
+   */
   dependencies?: Injectable[];
 }
 
-interface ValueToAssemble<T> {
+/**
+ *  Input for {@link Factory.assemble} to register a token based value
+ */
+export interface ValueToAssemble<T> {
   token: string;
   value: T;
 }
 
-interface FunctionToAssemble<T> {
+/**
+ *  Input for {@link Factory.assemble} to register a pure function
+ */
+export interface FunctionToAssemble<T> {
   function: Callable<T>;
   dependencies?: Injectable[];
 }
 
+/**
+ * Allowed input types for the {@link Factory.assemble} function
+ *  Types: {@link ClassToAssemble},{@link ValueToAssemble},{@link FunctionToAssemble}
+ */
 export type ToAssemble<T> =
   | ClassToAssemble<T>
   | FunctionToAssemble<T>
@@ -42,10 +87,19 @@ type ReturnValue<A extends Injectable, T> = A extends string
 
 export type Registery = ItemToAssemble[];
 
+/**
+ * Factory to manage the dependency injection tasks
+ * @class
+ */
 export class Factory {
   #registry: ItemToAssemble[] = [];
   #singletons = new Map<Injectable, unknown>();
 
+  /**
+   * Retrieve an instance of the requested injection token {@link Injectable}.
+   * @method
+   * @param {Injectable}
+   */
   get<T, A extends Injectable = string>(
     token: A,
   ): ReturnValue<A, T> {
@@ -111,6 +165,11 @@ export class Factory {
     throw new Error(errMsg);
   }
 
+  /**
+   * Register an object to be assembled by the Factory
+   * @method
+   * @param {ToAssemble}
+   */
   assemble<T>(toAssemble: ToAssemble<T>) {
     if ("class" in toAssemble) {
       this.#registry.push({
@@ -138,6 +197,11 @@ export class Factory {
 
 const ASSEMBLE_METADATA_KEY = "cargo:assemble:deps";
 
+/**
+ * Decorator to add the dependency metadata to a class. The decorated class can
+ * be used directly with the {@link Factory.get} method. Without the need
+ * to register the class with {@link Factory.assemble} beforehand.
+ */
 export function assemble<T>(
   options?: {
     deps?: unknown[];
