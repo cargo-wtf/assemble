@@ -2,7 +2,6 @@
  * With Cargo Assemble you get a simple and light dependency injection container
  * for your project. Its straight forward to use and is suitable for simple use
  * cases like the following:
- * @module
  *
  * ```ts
  * import { Factory } from "jsr:@cargo/assemble";
@@ -20,6 +19,7 @@
  *
  * DI.get(GreetingService);
  * ```
+ * @module
  */
 
 type ItemToAssemble = ToAssemble<unknown> & {
