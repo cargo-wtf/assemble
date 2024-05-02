@@ -4,7 +4,7 @@
  * cases like the following:
  * @module
  *
- * ``ts
+ * ```ts
  * import { Factory } from "jsr:@cargo/assemble";
  *
  * const DI = new Factory();
